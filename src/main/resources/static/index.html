@@ -28,6 +28,8 @@
     </div>
 </div>
 
+<div class="history"></div>
+
 <script type="text/javascript" src="/webjars/js-cookie/js.cookie.js"></script>
 <script type="text/javascript">
     $.ajaxSetup({
@@ -46,13 +48,15 @@
     $.get("/user", function(data) {
         $("#user").html(data.name);
         $(".unauthenticated").hide();
+        $(".history").append("<p>" + data.name + " авторизовался " + (new Date).toLocaleString('ru-RU') + "</p>");
         $(".authenticated").show();
     });
     var logout = function() {
         $.post("/logout", function() {
+            $(".history").append("<p>" + document.getElementById("user").innerText + " вышел " + (new Date).toLocaleString('ru-RU') + "</p>");
             $("#user").html('');
-            $(".unauthenticated").show();
             $(".authenticated").hide();
+            $(".unauthenticated").show();
         })
         return true;
     }
