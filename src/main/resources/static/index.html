@@ -10,6 +10,7 @@
     <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.min.css"/>
     <script type="text/javascript" src="/webjars/jquery/jquery.min.js"></script>
     <script type="text/javascript" src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/webjars/js-cookie/js.cookie.js"></script>
 </head>
 <body>
 
@@ -26,34 +27,64 @@
     <div align="right">
         <button onClick="logout()" class="btn btn-primary">Logout</button>
     </div>
+    <div class="repos">
+        <p>Your repositories on GitHub:</p>
+    </div>
 </div>
 
 <div class="history"></div>
 
-<script type="text/javascript" src="/webjars/js-cookie/js.cookie.js"></script>
 <script type="text/javascript">
+
+    // adding to request the CSRF token linked to the current session
     $.ajaxSetup({
         beforeSend : function(xhr, settings) {
-            if (settings.type == 'POST' || settings.type == 'PUT'
-                || settings.type == 'DELETE') {
-                if (!(/^http:.*/.test(settings.url) || /^https:.*/
-                    .test(settings.url))) {
+            if (settings.type == 'POST' || settings.type == 'PUT' || settings.type == 'DELETE') {
+                if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
                     // Only send the token to relative URLs i.e. locally.
-                    xhr.setRequestHeader("X-XSRF-TOKEN", Cookies
-                        .get('XSRF-TOKEN'));
+                    xhr.setRequestHeader("X-XSRF-TOKEN", Cookies.get('XSRF-TOKEN'));
                 }
             }
         }
     });
     $.get("/user", function(data) {
+
+        // putting username to say hello after logging in
         $("#user").html(data.name);
+
+        // hide container with GitHub link
         $(".unauthenticated").hide();
-        $(".history").append("<p>" + data.name + " авторизовался " + (new Date).toLocaleString('ru-RU') + "</p>");
+
+        // query all repositories of user specified with username
+        $.ajax({
+            type: "GET",
+            url: "https://api.github.com/users/" + data.name + "/repos",
+            dataType: "json"
+        }).done(function (data) {
+
+            // show list of repos on the page
+            $(".repos").append("<ul>");
+            for (var i=0; i<data.length; i++){
+                for (var key in data[i]){
+                    if (key == "name") $(".repos").append("<li>" + data[i][key] + "</li>");
+                }
+            }
+            $(".repos").append("</ul>");
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            alert("AJAX call failed: " + textStatus + ", " + errorThrown);
+        });
+
+        // add logging in status
+        $(".history").append("<p><strong>" + data.name + "</strong> авторизовался <strong>" + (new Date).toLocaleString('ru-RU') + "</strong></p>");
+
+        // show home page (container)
         $(".authenticated").show();
     });
+
+    // same logic for logout
     var logout = function() {
         $.post("/logout", function() {
-            $(".history").append("<p>" + document.getElementById("user").innerText + " вышел " + (new Date).toLocaleString('ru-RU') + "</p>");
+            $(".history").append("<p><strong>" + document.getElementById("user").innerText + "</strong> вышел <strong>" + (new Date).toLocaleString('ru-RU') + "</strong></p>");
             $("#user").html('');
             $(".authenticated").hide();
             $(".unauthenticated").show();
