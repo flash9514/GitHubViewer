@@ -14,6 +14,7 @@
 </head>
 <body>
 
+<!-- Container is shown for unauthorized user-->
 <div class="container unauthenticated">
     <h3 align="center">GitHubViewer</h3>
     <div>
@@ -21,6 +22,7 @@
     </div>
 </div>
 
+<!-- Container is shown for authorized user-->
 <div class="container authenticated" style="display: none">
     <h3 align="center">GitHubViewer</h3>
     Logged in as: <span id="user"></span>
@@ -32,10 +34,12 @@
     </div>
 </div>
 
-<div class="history"></div>
+<!-- History is shown for any user-->
+<div>
+    <div class="history"></div>
+</div>
 
 <script type="text/javascript">
-
     // adding to request the CSRF token linked to the current session
     $.ajaxSetup({
         beforeSend : function(xhr, settings) {
@@ -48,12 +52,14 @@
         }
     });
     $.get("/user", function(data) {
-
-        // putting username to say hello after logging in
+        // identification of username
         $("#user").html(data.name);
 
-        // hide container with GitHub link
+        // hide view of unauthorized user
         $(".unauthenticated").hide();
+
+        // adding authorization info to status
+        $(".history").append("<p><strong>" + data.name + "</strong> авторизовался <strong>" + (new Date).toLocaleString('ru-RU') + "</strong></p>");
 
         // query all repositories of user specified with username
         $.ajax({
@@ -61,7 +67,6 @@
             url: "https://api.github.com/users/" + data.name + "/repos",
             dataType: "json"
         }).done(function (data) {
-
             // show list of repos on the page
             $(".repos").append("<ul>");
             for (var i=0; i<data.length; i++){
@@ -74,10 +79,7 @@
             alert("AJAX call failed: " + textStatus + ", " + errorThrown);
         });
 
-        // add logging in status
-        $(".history").append("<p><strong>" + data.name + "</strong> авторизовался <strong>" + (new Date).toLocaleString('ru-RU') + "</strong></p>");
-
-        // show home page (container)
+        // showing authorized user view
         $(".authenticated").show();
     });
 
